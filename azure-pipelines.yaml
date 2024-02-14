@@ -1,54 +1,107 @@
-# Azure DevOps YAML Pipeline from Bow Data Toolkits
-
 trigger:
     branches:
         include:
             - "*"
 
-
-resources:
-    repositories:
-        - repository: bowdata-toolkits
-          type: git
-          name: toolkits/bowdata.toolkits.azure-pipelines
-          ref: refs/heads/master
-        - repository: bowdata-go-pipelines
-          type: git
-          name: toolkits/bowdata.toolkits.go_pipeline_templates
-          ref: refs/heads/master
-
-
-
 parameters:
+## Ignore Parameter Set
+  - name: _ignore_params
+    type: object
+    default: []
+## General Parameter Set
+  - name: _general_params
+    type: object
+    default:
+      - workingDirectory
+      - logLevel
   - name: workingDirectory
     default: $(Build.SourcesDirectory)
-  - name: preRelease
-    default: "a"
-# general params
   - name: logLevel
-    default: debug
+    default: INFO
     type: string
-    displayName: "Log Level"
     values:
-      - panic
-      - fatal
-      - error
-      - warn
-      - info
-      - debug
-      - trace
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+## Lint Stage Parameter Set
+  - name: _lint_stage_params
+    type: object
+    default:
+      - lintStageName
+      - lintStageDisplayName
+      - lintStageDependsOn
+      - lintStageCondition
+      - lintStageVariables
+  - name: lintStageName
+    default: Lint
+  - name: lintStageDisplayName
+    default: 'Lint Stage'
+  - name: lintStageDependsOn
+    default: ''
+  - name: lintStageCondition
+    default: succeeded()
+  - name: lintStageVariables
+    type: object
+    default: {}
+## Test Stage Parameter Set
+  - name: _test_stage_params
+    type: object
+    default:
+      - testStageName
+      - testStageDisplayName
+      - testStageDependsOn
+      - testStageCondition
+      - testStageVariables
+  - name: testStageName
+    default: Test
+  - name: testStageDisplayName
+    default: 'Test Stage'
+  - name: testStageDependsOn
+    default: 'Lint'
+  - name: testStageCondition
+    default: succeeded()
+  - name: testStageVariables
+    type: object
+    default: {}
+## Build Stage Parameter Set
+  - name: _build_stage_params
+    type: object
+    default:
+      - buildStageName
+      - buildStageDisplayName
+      - buildStageDependsOn
+      - buildStageCondition
+      - buildStageVariables
   - name: buildStageName
     default: Build
-## Integration Test Stage Parameters
-  - name: integrationTestStages
-    type: stageList
-    default: []
-## Version Stage Parameters
-  - name: useForceVersion
-    type: boolean
-    default: false
-  - name: preRelease
-    default: "a"
-  - name: versionStageDependsOn
+  - name: buildStageDisplayName
+    default: 'Build Stage'
+  - name: buildStageDependsOn
+    default: 'Test'
+  - name: buildStageCondition
+    default: and(succeeded(), or(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/master'), contains(variables['Build.SourceBranch'], 'refs/tags/')))
+  - name: buildStageVariables
     type: object
-    default: ['Build']
+    default: { }
+
+
+stages:
+  - template: /templates/stages/lint-stage.yaml
+    parameters:
+      ${{ each pair in parameters }}:
+        ${{if and(or(containsValue(parameters._lint_stage_params, pair.key), containsValue(parameters._general_params, pair.key)), not(containsValue(parameters._ignore_params, pair.key)))}}:
+          ${{pair.key}}: ${{pair.value}}
+
+  - template: /templates/stages/test-stage.yaml
+    parameters:
+      ${{ each pair in parameters }}:
+        ${{if and(or(containsValue(parameters._test_stage_params, pair.key), containsValue(parameters._general_params, pair.key)), not(containsValue(parameters._ignore_params, pair.key)))}}:
+          ${{pair.key}}: ${{pair.value}}
+
+  - template: /templates/stages/build-stage.yaml
+    parameters:
+      ${{ each pair in parameters }}:
+        ${{if and(or(containsValue(parameters._build_stage_params, pair.key), containsValue(parameters._general_params, pair.key)), not(containsValue(parameters._ignore_params, pair.key)))}}:
+          ${{pair.key}}: ${{pair.value}}

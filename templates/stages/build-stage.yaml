@@ -1,0 +1,88 @@
+parameters:
+  - name: buildStageName
+    default: Build
+  - name: buildStageDisplayName
+    default: 'Build Stage'
+  - name: buildStageDependsOn
+    default: ''
+  - name: buildStageCondition
+    default: succeeded()
+  - name: buildStageVariables
+    type: object
+    default: {}
+  - name: jobName
+    default: MakeBuildJob
+  - name: jobDisplayName
+    default: "Make Build"
+  - name: makeTarget
+    default: "build"
+  - name: makeEnvVars
+    type: object
+    default: {}
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+## publish-artifact-step only params
+  - name: artifactName
+    default: "buildArtifacts"
+  - name: filePathsToPublish
+    type: object
+    default: ['dist']
+  - name: publishArtifactCondition
+    default: succeeded()
+## Parameter Sets
+  - name: _ignore_parameters
+    type: object
+    default:
+      - buildStageName
+      - buildStageDisplayName
+      - buildStageDependsOn
+      - buildStageCondition
+      - buildStageVariables
+  - name: _make_job_parameters
+    type: object
+    default:
+      - makeTarget
+      - makeEnvVars
+      - workingDirectory
+      - logLevel
+      - jobName
+      - jobDisplayName
+  - name: _publish_artifact_step_parameters
+    type: object
+    default:
+      - workingDirectory
+      - artifactName
+      - filePathsToPublish
+      - publishArtifactCondition
+
+
+stages:
+  - stage: ${{parameters.buildStageName}}
+    displayName: ${{parameters.buildStageDisplayName}}
+    dependsOn: ${{parameters.buildStageDependsOn}}
+    condition: ${{parameters.buildStageCondition}}
+    variables:
+      ${{ each pair in parameters.buildStageVariables }}:
+        ${{pair.key}}: ${{pair.value}}
+    jobs:
+      - template: /templates/jobs/make-job.yaml
+        parameters:
+          ${{each pair in parameters}}:
+            ${{if and(containsValue(parameters._make_job_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
+              ${{pair.key}}: ${{pair.value}}
+          postSteps:
+
+            - template: /templates/steps/publish-artifacts-step.yaml
+              parameters:
+                ${{each pair in parameters}}:
+                  ${{if containsValue(parameters._publish_artifact_step_parameters, pair.key)}}:
+                    ${{pair.key}}: ${{pair.value}}

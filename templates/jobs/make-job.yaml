@@ -1,0 +1,81 @@
+# template for a make job
+parameters:
+## make-step params
+  - name: makeTarget
+  - name: makeStepName
+    default: "makeStep"
+  - name: makeStepDisplayName
+    default: "Running Makefile step"
+  - name: makeEnvVars
+    default: {}
+    type: object
+  - name: continueOnError
+    type: boolean
+    default: false
+## base-job params
+  - name: jobName
+    default: makeJob
+  - name: jobDisplayName
+    default: "Makefile Job"
+  - name: pyVersion
+    default: 3.12.2
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: virtualEnvName
+    default: ".venv"
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+  - name: pythonPackages
+    type: object
+    default: ['setuptools', 'poetry']
+  - name: postSteps
+    type: stepList
+    default: []
+  - name: preSteps
+    type: stepList
+    default: []
+## Parameter Sets
+  - name: _ignore_parameters
+    type: object
+    default:
+      - jobSteps
+  - name: _base_job_parameters
+    type: object
+    default:
+      - jobName
+      - jobDisplayName
+      - jobSteps
+      - workingDirectory
+      - logLevel
+  - name: _make_step_parameters
+    type: object
+    default:
+      - makeTarget
+      - makeEnvVars
+      - continueOnError
+      - workingDirectory
+      - logLevel
+
+jobs:
+  - template: /jobs/base-job.yaml
+    parameters:
+      ${{each pair in parameters}}:
+        ${{if and(containsValue(parameters._base_job_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
+          ${{pair.key}}: ${{pair.value}}
+      jobSteps:
+        - ${{ parameters.preSteps }}
+
+        - template: /steps/make-step.yaml
+          parameters:
+            ${{each pair in parameters}}:
+              ${{if and(containsValue(parameters._make_step_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
+                ${{pair.key}}: ${{pair.value}}
+
+        - ${{ parameters.postSteps }}

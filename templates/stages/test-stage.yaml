@@ -1,0 +1,79 @@
+parameters:
+  - name: testStageName
+    default: Test
+  - name: testStageDisplayName
+    default: 'Test Stage'
+  - name: testStageDependsOn
+    default: ''
+  - name: testStageCondition
+    default: succeeded()
+  - name: testStageVariables
+    type: object
+    default: {}
+  - name: jobDisplayName
+    default: "Make Test"
+  - name: makeTarget
+    default: "test"
+  - name: makeEnvVars
+    type: object
+    default: {}
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+## publish-artifact-step only params
+  - name: artifactName
+    default: "frozenRequirements"
+  - name: filePathsToPublish
+    type: object
+    default: ['frozen_requirements.txt']
+  - name: publishArtifactCondition
+    default: succeeded()
+## Parameter Sets
+  - name: _ignore_parameters
+    type: object
+    default:
+      - testStageName
+      - testStageDisplayName
+      - testStageDependsOn
+      - testStageCondition
+      - testStageVariables
+  - name: _make_job_parameters
+    type: object
+    default:
+      - makeTarget
+      - makeEnvVars
+      - workingDirectory
+      - logLevel
+      - jobDisplayName
+
+
+stages:
+  - stage: ${{parameters.testStageName}}
+    displayName: ${{parameters.testStageDisplayName}}
+    dependsOn: ${{parameters.testStageDependsOn}}
+    condition: ${{parameters.testStageCondition}}
+    variables:
+      ${{ each pair in parameters.testStageVariables }}:
+        ${{pair.key}}: ${{pair.value}}
+    jobs:
+      - template: /templates/jobs/make-job.yaml
+        parameters:
+          ${{each pair in parameters}}:
+            ${{if and(containsValue(parameters._make_job_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
+              ${{pair.key}}: ${{pair.value}}
+
+          postSteps:
+
+            - template: /templates/steps/publish-artifacts-step.yaml
+              parameters:
+                ${{each pair in parameters}}:
+                  ${{if containsValue(parameters._publish_artifact_step_parameters, pair.key)}}:
+                    ${{pair.key}}: ${{pair.value}}

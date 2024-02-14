@@ -1,0 +1,63 @@
+parameters:
+  - name: lintStageName
+    default: Lint
+  - name: lintStageDisplayName
+    default: 'Lint Stage'
+  - name: lintStageDependsOn
+    default: ''
+  - name: lintStageCondition
+    default: succeeded()
+  - name: lintStageVariables
+    type: object
+    default: {}
+  - name: jobDisplayName
+    default: "Make Lint"
+  - name: makeTarget
+    default: "lint"
+  - name: makeEnvVars
+    type: object
+    default: {}
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+## Parameter Sets
+  - name: _ignore_parameters
+    type: object
+    default:
+      - lintStageName
+      - lintStageDisplayName
+      - lintStageDependsOn
+      - lintStageCondition
+      - lintStageVariables
+  - name: _make_job_parameters
+    type: object
+    default:
+      - makeTarget
+      - makeEnvVars
+      - workingDirectory
+      - logLevel
+      - jobDisplayName
+
+
+stages:
+  - stage: ${{parameters.lintStageName}}
+    displayName: ${{parameters.lintStageDisplayName}}
+    dependsOn: ${{parameters.lintStageDependsOn}}
+    condition: ${{parameters.lintStageCondition}}
+    variables:
+      ${{ each pair in parameters.lintStageVariables }}:
+        ${{pair.key}}: ${{pair.value}}
+    jobs:
+      - template: /templates/jobs/make-job.yaml
+        parameters:
+          ${{each pair in parameters}}:
+            ${{if and(containsValue(parameters._make_job_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
+              ${{pair.key}}: ${{pair.value}}

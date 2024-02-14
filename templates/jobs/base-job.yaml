@@ -1,0 +1,112 @@
+# template for a base python Job
+parameters:
+  - name: jobName
+    default: baseJob
+  - name: jobDisplayName
+    default: "Base Job"
+  - name: jobDependsOn
+    type: object
+    default: []
+  - name: jobCondition
+    default: succeeded()
+  - name: azdoAgentPool
+    type: object
+    default:
+      vmImage: "ubuntu-latest"
+  - name: pipelineJobVariables
+    type: object
+    default: {}
+  - name: pythonVersion
+    default: 3.12
+  - name: pythonArchitecture
+    default: 'x64'
+  - name: pipVersion
+    default: 'latest'
+  - name: onlyAddExtraIndex
+    default: true
+    type: boolean
+  - name: artifactFeeds
+    default: "BowData"
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: virtualEnvName
+    default: ".venv"
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+  - name: pythonPackages
+    type: object
+    default: []
+  - name: jobSteps
+    type: stepList
+    default: []
+
+
+jobs:
+  - job: ${{parameters.jobName}}
+    pool: ${{parameters.azdoAgentPool}}
+    condition: ${{parameters.jobCondition}}
+    displayName: ${{parameters.jobDisplayName}}
+    dependsOn: ${{parameters.jobDependsOn}}
+    variables:
+      ${{ each pair in parameters.pipelineJobVariables }}:
+        ${{pair.key}}: ${{pair.value}}
+    steps:
+      - checkout: self
+        submodules: recursive
+        persistCredentials: true
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '${{parameters.pythonVersion}}'
+          architecture: '${{parameters.pythonArchitecture}}'
+        displayName: 'Using Python ${{parameters.pythonVersion}} ${{parameters.pythonArchitecture}}'
+
+      - ${{if eq(parameters.pipVersion, 'latest')}}:
+        - script: |
+            python -m pip install -U pip
+          displayName: 'Updating pip'
+
+      - task: PipAuthenticate@1
+        inputs:
+          artifactFeeds: ${{parameters.artifactFeeds}}
+          onlyAddExtraIndex:  ${{parameters.onlyAddExtraIndex}}
+        displayName: 'Pip Authenticate'
+
+      - script: |
+          echo "INDEX: $PIP_INDEX_URL"
+          echo "EXTRA INDEX: $PIP_EXTRA_INDEX_URL"
+          pip install virtualenv
+          virtualenv ${{parameters.virtualEnvName}}
+          source ${{parameters.workingDirectory}}/${{parameters.virtualenvName}}/bin/activate
+          pip install -U pip setuptools
+          pip install poetry
+          pip install poetry-plugin-export
+          pip install artifacts-keyring
+          python -c "import sys; print('Using Interpreter: ', sys.executable)"
+          git config --global url."https\://$(DEVOPS_ORGANISATION)\:$(AZURE_DEVOPS_PAT)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)".insteadOf "https\://$(DEVOPS_ORGANISATION)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)"
+          poetry source add bowdata --priority=supplemental https\://pkgs.$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)/_packaging/$(DEVOPS_ORGANISATION)/pypi/simple/
+        displayName: "Creating Virtual Environment"
+        workingDirectory: ${{parameters.workingDirectory}}
+        env:
+          LOGLEVEL: ${{parameters.logLevel}}
+
+      - ${{each package in parameters.pythonPackages}}:
+          - script: |
+              source ${{parameters.workingDirectory}}/${{parameters.virtualenvName}}/bin/activate
+              python -c "import sys; print('Using Interpreter: ', sys.executable)"
+              echo "Installing: ${{package}}"
+              pip install -v -U ${{package}}
+              echo "Installed Package: ${{package}}"
+            displayName: "Installing Package: ${{package}}"
+            workingDirectory: ${{parameters.workingDirectory}}
+            env:
+              LOGLEVEL: ${{parameters.loglevel}}
+
+      - ${{ parameters.jobSteps }}
+

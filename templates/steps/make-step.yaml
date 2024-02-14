@@ -1,0 +1,37 @@
+parameters:
+  - name: makeTarget
+  - name: makeStepName
+    default: "makeStep"
+  - name: makeStepDisplayName
+    default: "Running Makefile step"
+  - name: makeEnvVars
+    default: {}
+    type: object
+  - name: continueOnError
+    type: boolean
+    default: false
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: logLevel
+    default: INFO
+    type: string
+    values:
+      - INFO
+      - DEBUG
+      - WARNING
+      - ERROR
+      - CRITICAL
+
+
+steps:
+    - script: |
+        make ${{parameters.makeTarget}}
+      displayName: ${{parameters.makeStepDisplayName}}
+      name: ${{parameters.makeStepName}}
+      env:
+        ${{ each pair in parameters.makeEnvVars }}:
+          ${{pair.key}}: ${{pair.value}}
+        AZURE_DEVOPS_PAT: $(AZURE_DEVOPS_PAT)
+        LOGLEVEL: ${{parameters.logLevel}}
+      workingDirectory: ${{parameters.workingDirectory}}
+      continueOnError: ${{parameters.continueOnError}}

@@ -1,39 +1,49 @@
-# Makefile for Go runtime environs
-GOPATH=$(shell go env GOPATH)
-GOBIN=$(shell go env GOBIN)
-ifeq ($(GOBIN),)
-GOBIN=$(GOPATH)/bin
-endif
+# Makefile for Py runtime environs
+DEVOPS_DOMAIN = "dev.azure.com"
+DEVOPS_ORGANISATION = "bowdata"
+VIRTUALENV_NAME = ".venv"
+
+#.ONESHELL:
 
 develop:
-	git config --global url."https://bowdata:$(AZURE_DEVOPS_PAT)@dev.azure.com/bowdata".insteadOf "https://bowdata@dev.azure.com/bowdata"
-	go mod edit -replace bowdata.sandbox.python_package/pkg=../pkg
-	go mod edit -replace bowdata.sandbox.python_package/cmd=../cmd
-	go clean -i -cache -modcache
-	go get -u ./...
+#	python -m pip install -U pip
+#	pip install virtualenv
+#	virtualenv $(VIRTUALENV_NAME)
+#	source $(VIRTUALENV_NAME)/bin/activate
+	pip install -U pip setuptools
+	pip install poetry
+	pip install artifacts-keyring
+	git config --global url."https://$(DEVOPS_ORGANISATION)\:$(AZURE_DEVOPS_PAT)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)".insteadOf "https://$(DEVOPS_ORGANISATION)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)"
+	poetry source add --priority=supplemental bowdata "https://pkgs.$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)/_packaging/$(DEVOPS_ORGANISATION)/pypi/simple/"
+	poetry cache clear --no-interaction --all .
+	poetry install --no-cache --with dev
 
 lint:
-	go mod edit -replace bowdata.test.go_module_template/pkg=../pkg
-	go mod edit -replace bowdata.test.go_module_template/cmd=../cmd
-	go vet -json ./...
-	go install honnef.co/go/tools/cmd/staticcheck@latest && $(GOPATH)/bin/staticcheck ./...
+	poetry install --only lint
+	poetry run python -c "import os; a = 1 if os.path.exists('test-reports') else os.makedirs('test-reports')"
+	poetry run flake8 src/ --docstring-convention google --show-source --format xml --output-file test-reports/lint-results.xml --exit-zero
+	poetry run flake8 src/ --docstring-convention google
 
 test:
-	go mod edit -replace bowdata.test.go_module_template/pkg=../pkg
-	go mod edit -replace bowdata.test.go_module_template/cmd=../cmd
-	go clean -testcache
-	go test ./...
+	poetry cache clear --no-interaction --all .
+	poetry install --no-cache --with test
+	poetry export -f requirements.txt --output frozen_requirements.txt
+	poetry run python -c "import os; a = 1 if os.path.exists('test-reports') else os.makedirs('test-reports')"
+	poetry run pytest -rs tests --junitxml=test-reports/test-results.xml
 
 setup_version:
-	go mod init bowdata.sandbox.python_package
+	poetry init
 
 build:
-	go clean -i -cache -modcache
-	go mod tidy
-	go build -o $(GOBIN)/bowdata/sandbox/python_package
+	poetry build
 
-release:
-	go mod edit -dropreplace=bowdata.sandbox.python_package/pkg
-	go mod edit -dropreplace=bowdata.sandbox.python_package/cmd
+publish:
+	poetry publish
 
-.PHONY: setup_version develop lint test build release
+docs:
+	poetry install --only docs
+	poetry run python -c "import os; a = 1 if os.path.exists('docs/source') else os.makedirs('docs/source')"
+	poetry run python -c "import os; a = 1 if os.path.exists('docs/html') else os.makedirs('docs/html')"
+	poetry run python -m sphinx -b html -a docs/source docs/html
+
+.PHONY: setup_version develop lint test build release docs

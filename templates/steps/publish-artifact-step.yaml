@@ -1,0 +1,18 @@
+parameters:
+  - name: artifactName
+    default:
+  - name: artifactPath
+    default:
+  - name: workingDirectory
+    default: $(System.DefaultWorkingDirectory)
+  - name: publishArtifactCondition
+    default: succeeded()
+
+
+steps:
+  - task: PublishPipelineArtifact@1
+    inputs:
+      artifactName: ${{parameters.artifactName}}
+      targetPath: ${{parameters.workingDirectory}}/${{parameters.artifactPath}}
+    displayName: 'Publish Artifact ${{parameters.artifactName}}'
+    condition: ${{parameters.publishArtifactCondition}}
