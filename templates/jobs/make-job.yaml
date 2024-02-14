@@ -64,7 +64,7 @@ parameters:
       - logLevel
 
 jobs:
-  - template: /jobs/base-job.yaml
+  - template: /templates/jobs/base-job.yaml
     parameters:
       ${{each pair in parameters}}:
         ${{if and(containsValue(parameters._base_job_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
