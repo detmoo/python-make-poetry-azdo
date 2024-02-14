@@ -39,7 +39,7 @@ parameters:
   - name: lintStageDisplayName
     default: 'Lint Stage'
   - name: lintStageDependsOn
-    default: []
+    default: ""
   - name: lintStageCondition
     default: succeeded()
   - name: lintStageVariables
