@@ -1,8 +1,9 @@
 parameters:
   - name: artifactName
     default:
-  - name: artifactPath
-    default:
+  - name: filePathsToPublish
+    type: object
+    default: []
   - name: workingDirectory
     default: $(System.DefaultWorkingDirectory)
   - name: publishArtifactCondition
@@ -10,9 +11,17 @@ parameters:
 
 
 steps:
+  - ${{ each filePath in parameters.filePathsToPublish }}:
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: ${{parameters.workingDirectory}}
+        contents: ${{filePath}}
+        targetFolder: $(Build.ArtifactStagingDirectory)
+
   - task: PublishPipelineArtifact@1
     inputs:
       artifactName: ${{parameters.artifactName}}
-      targetPath: ${{parameters.workingDirectory}}/${{parameters.artifactPath}}
-    displayName: 'Publish Artifact ${{parameters.artifactName}}'
+      targetPath: $(Build.ArtifactStagingDirectory)
+    displayName: 'Publish files to ${{parameters.artifactName}}'
     condition: ${{parameters.publishArtifactCondition}}
