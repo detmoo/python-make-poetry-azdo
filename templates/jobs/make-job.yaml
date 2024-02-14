@@ -72,7 +72,7 @@ jobs:
       jobSteps:
         - ${{ parameters.preSteps }}
 
-        - template: /steps/make-step.yaml
+        - template: /templates/steps/make-step.yaml
           parameters:
             ${{each pair in parameters}}:
               ${{if and(containsValue(parameters._make_step_parameters, pair.key), not(containsValue(parameters._ignore_parameters, pair.key)))}}:
