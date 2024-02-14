@@ -72,7 +72,7 @@ stages:
 
           postSteps:
 
-            - template: /templates/steps/publish-artifacts-step.yaml
+            - template: /templates/steps/publish-artifact-step.yaml
               parameters:
                 ${{each pair in parameters}}:
                   ${{if containsValue(parameters._publish_artifact_step_parameters, pair.key)}}:
