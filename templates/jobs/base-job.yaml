@@ -89,8 +89,8 @@ jobs:
           pip install poetry-plugin-export
           pip install artifacts-keyring
           python -c "import sys; print('Using Interpreter: ', sys.executable)"
-          git config --global url."https\://$(DEVOPS_ORGANISATION)\:$(AZURE_DEVOPS_PAT)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)".insteadOf "https\://$(DEVOPS_ORGANISATION)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)"
-          poetry source add bowdata --priority=supplemental https\://pkgs.$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)/_packaging/$(DEVOPS_ORGANISATION)/pypi/simple/
+          git config --global url."https://$(DEVOPS_ORGANISATION)\:$(AZURE_DEVOPS_PAT)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)".insteadOf "https://$(DEVOPS_ORGANISATION)\@$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)"
+          pip config --site set global.extra-index-url {env:PIP_EXTRA_INDEX_URL:https://pkgs.$(DEVOPS_DOMAIN)/$(DEVOPS_ORGANISATION)/_packaging/$(DEVOPS_ORGANISATION)/pypi/simple/}
         displayName: "Creating Virtual Environment"
         workingDirectory: ${{parameters.workingDirectory}}
         env:

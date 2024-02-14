@@ -3,6 +3,10 @@ trigger:
         include:
             - "*"
 
+variables:
+  DEVOPS_ORGANISATION: "bowdata"
+  DEVOPS_DOMAIN: "dev.azure.com"
+
 parameters:
 ## Ignore Parameter Set
   - name: _ignore_params

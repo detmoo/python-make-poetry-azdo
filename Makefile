@@ -1,7 +1,7 @@
 # Makefile for Py runtime environs
-DEVOPS_DOMAIN = "dev.azure.com"
-DEVOPS_ORGANISATION = "bowdata"
-VIRTUALENV_NAME = ".venv"
+DEVOPS_DOMAIN ?= "dev.azure.com"
+DEVOPS_ORGANISATION ?= "bowdata"
+VIRTUALENV_NAME ?= ".venv"
 
 #.ONESHELL:
 

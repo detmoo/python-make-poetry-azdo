@@ -38,5 +38,8 @@ steps:
           ${{pair.key}}: ${{pair.value}}
         AZURE_DEVOPS_PAT: $(AZURE_DEVOPS_PAT)
         LOGLEVEL: ${{parameters.logLevel}}
+        DEVOPS_ORGANISATION: $(DEVOPS_ORGANISATION)
+        DEVOPS_DOMAIN: $(DEVOPS_DOMAIN)
+        VIRTUALENV_NAME: ${{parameters.virtualenvName}}
       workingDirectory: ${{parameters.workingDirectory}}
       continueOnError: ${{parameters.continueOnError}}
