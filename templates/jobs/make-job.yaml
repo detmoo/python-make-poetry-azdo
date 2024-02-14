@@ -62,6 +62,7 @@ parameters:
       - continueOnError
       - workingDirectory
       - logLevel
+      - virtualEnvName
 
 jobs:
   - template: /templates/jobs/base-job.yaml
