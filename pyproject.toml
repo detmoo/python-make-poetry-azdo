@@ -6,11 +6,6 @@ authors = ["Oliver Richardson <oliver@bow-data.com>"]
 readme = "README.md"
 packages = [{include = "bowdata", from = "src"}]
 
-# [tool.setuptools.packages.find]
-# where = ["src"]
-# include = ["bowdata.*"]
-# namespaces = true
-
 [tool.poetry.dependencies]
 python = "^3.9"
 click = "^8.1.7"
